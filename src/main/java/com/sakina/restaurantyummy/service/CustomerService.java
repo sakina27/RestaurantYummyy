@@ -6,12 +6,13 @@ import com.sakina.restaurantyummy.dto.LoginRequest;
 import com.sakina.restaurantyummy.entity.Customer;
 import com.sakina.restaurantyummy.exception.CustomerNotFoundException;
 import com.sakina.restaurantyummy.helper.EncryptionService;
+import com.sakina.restaurantyummy.helper.JWTHelper;
 import com.sakina.restaurantyummy.mapper.CustomerMapper;
 import com.sakina.restaurantyummy.repo.CustomerRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static java.lang.String.format;
@@ -22,8 +23,8 @@ public class CustomerService {
     private final CustomerRepo customerRepo;
     private final CustomerMapper customerMapper;
     private final EncryptionService encryptionService;
-    //private final JWTHelper jwtHelper;
-    public String createCustomer(CustomerRequest request) {
+    private final JWTHelper jwtHelper;
+    public String createCustomer(CustomerRequest.CustomerCreateRequest request) {
         Customer customer = customerMapper.toCustomer(request);
         customer.setPassword(encryptionService.encode(customer.getPassword()));
         customerRepo.save(customer);
@@ -43,12 +44,44 @@ public class CustomerService {
     }
 
     public String login(LoginRequest request) {
-        Customer customer = getCustomer(request.email());
-        if(!encryptionService.validates(request.password(), customer.getPassword())) {
-            return "Wrong Password or Email";
+        Optional<Customer> optionalCustomer = customerRepo.findByEmail(request.email());
+        if (optionalCustomer.isPresent()) {
+            Customer customer = optionalCustomer.get();
+            if (encryptionService.validates(request.password(), customer.getPassword())) {
+                return jwtHelper.generateToken(customer.getEmail());
+            } else {
+                return "Invalid password";
+            }
+        } else {
+            return "User not found";
         }
 
-        //return jwtHelper.generateToken(request.email());
-        return "Login Successful";
+        //return jwtHelper.generateToken(request.email())
+    }
+
+    public Customer updateCustomer(String email, CustomerRequest.CustomerUpdateRequest updateRequest) {
+        // Fetch the existing customer by email
+        Optional<Customer> optionalCustomer = customerRepo.findByEmail(email);
+        if (optionalCustomer.isPresent()) {
+            Customer customer = optionalCustomer.get();
+
+            // Update fields only if they are present in the request
+            if (updateRequest.firstName() != null) {
+                customer.setFirstName(updateRequest.firstName());
+            }
+            if (updateRequest.lastName() != null) {
+                customer.setLastName(updateRequest.lastName());
+            }
+            if (updateRequest.city() != null) {
+                customer.setCity(updateRequest.city());
+            }
+            if (updateRequest.pinCode()!= null) {
+                customer.setPinCode(updateRequest.pinCode());
+            }
+            customer.setUpdatedOn(LocalDateTime.now());
+            return customerRepo.save(customer);
+        } else {
+            return null;
+        }
     }
 }

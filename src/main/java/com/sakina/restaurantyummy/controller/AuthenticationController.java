@@ -23,7 +23,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> createCustomer(@RequestBody @Valid CustomerRequest request) {
+    public ResponseEntity<String> createCustomer(@RequestBody @Valid CustomerRequest.CustomerCreateRequest request) {
         return ResponseEntity.ok(customerService.createCustomer(request));
     }
 }

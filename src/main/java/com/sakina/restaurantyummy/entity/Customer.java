@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -43,5 +45,8 @@ public class Customer {
 
     @Column(name = "access_token", unique = true)
     private String accessToken;
+
+    @Column(name="updated_on")
+    private LocalDateTime updatedOn;
 }
 
